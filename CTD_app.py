@@ -403,10 +403,10 @@ with st.sidebar:
                     with col1:
                         # Download button
                         st.download_button(
-                        label="📥 XML",
+                        label="📥 CSV",
                         data=ictrp_file,
-                        file_name='ICTRP_WHO.xml',
-                        mime='text/xml',
+                        file_name='ICTRP_WHO.csv',
+                        mime='text/csv',
                         )
                     with col2:
                         st.download_button(
