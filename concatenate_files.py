@@ -1,4 +1,5 @@
 import pandas as pd
+import streamlit as st
 
 def concatenate_files(uploaded_files, data_type): #data type could be csv or xml
         """Reads and concatenates a list of uploaded CSV or xmls files."""
