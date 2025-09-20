@@ -12,7 +12,7 @@ def concatenate_files(uploaded_files, data_type): #data type could be csv or xml
                     df = pd.read_csv(file)
                     all_dfs.append(df)
                 elif data_type == 'xml':
-                    df = pd.read_xml(file)
+                    df = pd.read_xml(file,parser='etree')
                     all_dfs.append(df)
             except Exception as e:
                 st.error(f"Error reading {file.name}: {e}")
