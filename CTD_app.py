@@ -396,7 +396,7 @@ with st.sidebar:
                 st.session_state['ictrp_export'] = ictrp_toexport_final
                 with tab3: 
                     ## WHO ICTRP to export
-                    ictrp_file = ictrp_toexport_final.to_xml(index=False)
+                    ictrp_file = ictrp_toexport_final.to_csv(index=False)
                     st.subheader("WHO ICTRP")
                     st.markdown(" ")
                     col1, col2 = st.columns(2)
