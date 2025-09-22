@@ -4,69 +4,109 @@ import re
 from file_convertor import *
 from concatenate_files import *
 
+
 st.set_page_config(
-    page_title="Clinical Trials Deduplicator",
+    page_title="Clinical Trial Deduplicator",
     page_icon="",
     layout="centered"
 )
  
-st.title("Clinical Trials Deduplicator")
+st.title("Clinical Trial Deduplicator")
 
 
 # Tabs for the main content
 tab1, tab2, tab3 = st.tabs(["Home", "Data Summary", "Export Data"])
 with tab1:
-        st.markdown("""
+    st.markdown("""
+    ### Overview
+    This tool is designed to remove duplicate records between clinical trial registries (ClinicalTrials.gov, WHO ICTRP, ScanMedicine) and Cochrane Central or Embase. After uploading your data to the designated section for each information source, you can download clean, de-duplicated data for the trial registries.
     
-    ### Using This Tool
+    ### Using this tool
     
     1. **Upload Data**: Navigate to the "Upload Data" section in the sidebar.
     
     2. **Select Your Files**: Upload your RIS, CSV, or XML data files.
     
-    3. **View Results**: Review the processed information in the "Data Summary" and "Export Data" tabs.
+    3. **View Results**: View and download the results in "Data Summary" and "Export Data" tabs.
     
     
-    """)
+    """) 
+
+def Cochrane_state():
+    st.session_state['Central_IDs'] = []
+    st.session_state['Central_df'] =  None
+
+def Embase_state():
+    st.session_state['Embase_IDs'] = []
+    st.session_state['Embase_df'] =  None
+
+def ClinicalTirals_state():
+    st.session_state['CT_IDs'] = []
+    st.session_state['CT_df'] =  None
+
+def WHO_ICTRP_state():
+    st.session_state['ICTRP_IDs'] = []
+    st.session_state['ICTRP_df'] =  None
+
+def ScanMedicine_state():
+    st.session_state['SM_IDs'] = []
+    st.session_state['SM_df'] =  None
+
 # Data Uploaders in the sidebar
 with st.sidebar:
     st.header("Upload Your Data")
-    
     # Section 1: Cochrane CENTRAL
     st.subheader("1. Cochrane Central")
     uploaded_ris_file1 = st.file_uploader(
         "Choose your RIS file...",
         type=["ris"],
-        key="ris_uploader1" 
+        key="ris_uploader1",
+        accept_multiple_files=True,
+        on_change=Cochrane_state
     )
-    if uploaded_ris_file1 is not None:
-        st.success("Cochrane Central data uploaded successfully!")
     
-        # create central ids list
+    
+    
+    # create central ids list
+
+    if uploaded_ris_file1:
+        st.success("Data uploaded successfully!")
         m3_pattern = re.compile(r'M3\s+-\s+Trial registry record', re.MULTILINE)
         a1_pattern = re.compile(r'A1\s+-\s+(.*)', re.MULTILINE)
-        central = uploaded_ris_file1.read().decode("utf-8")
-        central = central.split("ER  -")[:-1]
-        st.write(f"🎉 Successfully parsed **{len(central)}** records from Cochrane Central.")
-        central_ids = []
-        for i, record in enumerate(central):
-            if m3_pattern.search(record):
-                a1_authors = a1_pattern.findall(record)
-                if a1_authors:
-                    for author in a1_authors:
-                        if author.strip()[-1] == ',':
-                            central_ids.append (author.strip()[:-1])
-                        else:
-                            pass
-                            central_ids.append (author.strip())
-        if central_ids:
-            # st.write(f"🎉 Successfully detected **{len(central_ids)}** trial records from Cochrane Central.")
-            st.session_state['Central_IDs'] = central_ids
-            st.session_state['Central_df'] =  central
-            
-        else:
-            st.warning("No trial records were identified from Cochrane CENTRAL.")
-    
+        full_ris_text = ""
+        for uploaded_file in uploaded_ris_file1:
+            try:
+                # Read the content of the file
+                ris_content = uploaded_file.read().decode("utf-8")
+                # Concatenate the content using the + operator
+                full_ris_text += ris_content + "\n"
+            except UnicodeDecodeError:
+                st.error(f"Error: Could not decode '{uploaded_file.name}'. Please ensure it is a valid text file.")
+        try:
+            if full_ris_text:
+                central = full_ris_text
+                central = central.split("ER  -")[:-1]
+                st.write(f"🎉 Successfully parsed **{len(central)}** records.")
+                central_ids = []
+                for i, record in enumerate(central):
+                    if m3_pattern.search(record):
+                        a1_authors = a1_pattern.findall(record)
+                        if a1_authors:
+                            for author in a1_authors:
+                                if author.strip()[-1] == ',':
+                                    central_ids.append (author.strip()[:-1])
+                                else:
+                                    central_ids.append (author.strip())
+                if central_ids:
+                    # st.write(f"🎉 Successfully detected **{len(central_ids)}** trial records from Cochrane Central.")
+                    st.session_state['Central_IDs'] = central_ids
+                    st.session_state['Central_df'] =  central
+                    
+                else:
+                    st.warning("No trial records were identified. Please double check the uploaded data.")
+                # uploaded_ris_file1.seek(0) 
+        except Exception as e:
+            st.error(f"Error reading RIS file: {e}. Please check the uploaded data.")
     
     st.markdown("---") 
     
@@ -75,32 +115,46 @@ with st.sidebar:
     uploaded_ris_file2 = st.file_uploader(
         "Choose your RIS file...",
         type=["ris"],
-        key="ris_uploader2"
+        key="ris_uploader2",
+        accept_multiple_files=True,
+        on_change=Embase_state
     )
-    if uploaded_ris_file2 is not None:
-        st.success("Embase data uploaded successfully!")
-    
-        # create embase ids list
+    if uploaded_ris_file2:
+        st.success("Data uploaded successfully!")
         db_pattern = re.compile(r'DB\s+-\s+Embase Clinical Trials',re.MULTILINE)
         an_pattern = re.compile(r'AN\s+-\s+(.*)', re.MULTILINE)
-        embase = uploaded_ris_file2.read().decode("utf-8")
-        embase = embase.split("ER  -")[:-1]
-        st.write(f"🎉 Successfully parsed **{len(embase)}** records from Embase.")
-        embase_ids = []
-        for i, record in enumerate(embase):
-            if db_pattern.search(record):
-                an_authors = an_pattern.findall(record)
-                if an_authors:
-                    for author in an_authors:
-                        embase_ids.append(author.strip())
-    
-        if embase_ids:
-            # st.write(f"🎉 Successfully detected **{len(embase_ids)}** trial records from Embase.")
-            st.session_state['Embase_IDs'] = embase_ids
-            st.session_state['Embase_df'] =  embase
-        else:
-            st.warning("No trial records were identified from Embase.")
-        # st.info(f"File name: {uploaded_ris_file2.name}")
+        full_ris_text_1 = ""
+        for uploaded_file in uploaded_ris_file2:
+            try:
+                # Read the content of the file
+                ris_content_1 = uploaded_file.read().decode("utf-8")
+                # Concatenate the content using the + operator
+                full_ris_text_1 += ris_content_1 + "\n"
+            except UnicodeDecodeError:
+                st.error(f"Error: Could not decode '{uploaded_file.name}'. Please ensure it is a valid text file.")
+        # create embase ids list
+        try:
+            if full_ris_text_1:
+                embase = full_ris_text_1
+                embase = embase.split("ER  -")[:-1]
+                st.write(f"🎉 Successfully parsed **{len(embase)}** records.")
+                embase_ids = []
+                for i, record in enumerate(embase):
+                    if db_pattern.search(record):
+                        an_authors = an_pattern.findall(record)
+                        if an_authors:
+                            for author in an_authors:
+                                embase_ids.append(author.strip())
+            
+                if embase_ids:
+                    # st.write(f"🎉 Successfully detected **{len(embase_ids)}** trial records from Embase.")
+                    st.session_state['Embase_IDs'] = embase_ids
+                    st.session_state['Embase_df'] =  embase
+                else:
+                    st.warning("No trial records were identified. Please double check the uploaded data.")
+        except Exception as e:
+            st.error(f"Error reading RIS file: {e}. Please check the uploaded data.")
+        
     
     st.markdown("---") 
 
@@ -111,15 +165,17 @@ with st.sidebar:
         "Choose your CSV file...",
         type=["csv"],
         key="csv_uploader1",
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        on_change=ClinicalTirals_state
     )
-    # if uploaded_csv_file is not None:
-    #     st.success("ClinicalTrials data uploaded successfully!")
     if uploaded_csv_file:
-        st.success("ClinicalTrials data uploaded successfully!")
+        # current_files['csv_uploader1'] = [f.id for f in uploaded_csv_file]
+        st.success("Data uploaded successfully!")
+        
         try: 
             df_ct = concatenate_files (uploaded_csv_file, 'csv')
-            st.write(f"🎉 Successfully parsed **{(df_ct.shape[0])}** records from ClinicalTrials.gov.")
+            
+            st.write(f"🎉 Successfully parsed **{(df_ct.shape[0])}** records.")
             ct_ids = []
             for i in df_ct['NCT Number']:
                 ct_ids.append(str(i).strip())
@@ -132,13 +188,9 @@ with st.sidebar:
                 st.warning("No trial records were identified from ClinicalTrials.gov.")
         
         except Exception as e:
-            st.error(f"Error during concatenation: {e}")
+            st.error(f"Error reading CSV file: {e}. Please check the uploaded data.")
 
     st.markdown("---")
-       
-                
-
-   
     
     # ScanMedicine data
     st.subheader("4. ScanMedicine")
@@ -146,13 +198,14 @@ with st.sidebar:
         "Choose your CSV file...",
         type=["csv"], 
         key="csv_uploader2",
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        on_change=ScanMedicine_state
     )
     if uploaded_csv_file1:
-        st.success(f"ScanMedicine data uploaded successfully!")
+        st.success(f"Data uploaded successfully!")
         try:
             df_scanmedicine = concatenate_files (uploaded_csv_file1, 'csv')
-            st.write(f"🎉 Successfully parsed **{(df_scanmedicine.shape[0])}** records from ScanMedicine.")
+            st.write(f"🎉 Successfully parsed **{(df_scanmedicine.shape[0])}** records.")
             # create scanmedicine ids list
             scanmedicine_ids = []
             for i in df_scanmedicine['MainID']:
@@ -166,7 +219,7 @@ with st.sidebar:
             else:
                 st.warning("No trial records were identified from ScanMedicine.")
         except Exception as e:
-            st.error(f"Error reading CSV file: {e}")    
+            st.error(f"Error reading CSV file: {e}. Please check the uploaded data.")    
     
     st.markdown("---")
     
@@ -176,14 +229,15 @@ with st.sidebar:
         "Choose your XML file...",
         type=["xml"],
         key="xml_uploader",
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        on_change=WHO_ICTRP_state
     )
     if uploaded_xml_file:
-        st.success("WHO ICTRP data uploaded successfully!")
+        st.success("Data uploaded successfully!")
     
         try:
             df_ictrp = concatenate_files (uploaded_xml_file, 'xml')
-            st.write(f"🎉 Successfully parsed **{(df_ictrp.shape[0])}** records from WHO ICTRP.")
+            st.write(f"🎉 Successfully parsed **{(df_ictrp.shape[0])}** records.")
             # create ictrp ids list
             ictrp_ids = []
             for i in df_ictrp['TrialID']:
@@ -197,16 +251,12 @@ with st.sidebar:
                 st.warning("No trial records were identified from WHO ICTRP.")
             
         except Exception as e:
-            st.error(f"Error reading XML file: {e}")
+            st.error(f"Error reading XML file: {e}. Please check the uploaded data.")
         
     st.markdown("---") 
-    
-
-   
+       
     with tab2:
-        
-        
-        ## Central data and ids
+        # Central data and ids
         if 'Central_IDs' in st.session_state:
             central_ids = st.session_state['Central_IDs']
         else: 
