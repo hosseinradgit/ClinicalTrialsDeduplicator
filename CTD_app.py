@@ -339,14 +339,12 @@ with st.sidebar:
                 combined_ct_ictrp_sm.append(("ictrp", i))
             for i in  scanmedicine_ids_final2:
                 combined_ct_ictrp_sm.append(("sm", i))
-            
             # matching three registry records with cochrane central records and embase trials
             combined_central_embase = []
             for (i,j) in combined_ct_ictrp_sm:
                 if (j in central_ids) or (j in embase_ids):
                     combined_central_embase.append((i,j))
             # st.write ("Total number of duplicate records between three registries and Cochrane Central/embase trials: ", len(combined_central_embase))
-            
             # Determining the number of records of each source (ClinicalTrials.gov)
             ct_filter = []
             for i, j in combined_ct_ictrp_sm:
@@ -394,7 +392,6 @@ with st.sidebar:
             for i, j in combined_central_embase:
                 if i == "ictrp":
                     ictrp_filter_final.append(j)
-            
             # Determining the number of duplicates of each source with central and embase records (ScanMedicine)
             scanmedicine_filter_final = []
             for i, j in combined_central_embase:
@@ -404,7 +401,7 @@ with st.sidebar:
             # create dataframe for each registry after remove duplicates with cochrane central
             data_summary = {"Source Name":[], "Total Records":[], "Unique Records (in Source)":[], "Deduplicated Records":[]}
             try:
-                ct_toexport_final = ct_toexport[~ct_toexport['NCT Number'].isin(ct_filter_final)]
+                ct_toexport_final = ct_toexport[~ct_toexport['NCT Number'].str.strip().isin(ct_filter_final)]
                 data_summary["Total Records"].append(df_ct.shape[0])
                 data_summary["Unique Records (in Source)"].append(len(ct_ids_final))
                 data_summary["Deduplicated Records"].append(len(ct_toexport_final))
@@ -438,7 +435,7 @@ with st.sidebar:
                 pass
                 
             try: 
-                ictrp_toexport_final = ictrp_toexport[~ictrp_toexport['TrialID'].isin(ictrp_filter_final)]
+                ictrp_toexport_final = ictrp_toexport[~ictrp_toexport['TrialID'].str.strip().isin(ictrp_filter_final)]
                 data_summary["Total Records"].append(df_ictrp.shape[0])
                 data_summary["Unique Records (in Source)"].append(len(ictrp_ids_final))
                 data_summary["Deduplicated Records"].append(len(ictrp_toexport_final))
@@ -470,7 +467,7 @@ with st.sidebar:
                 pass
                 
             try:
-                scanmedicine_toexport_final = scanmedicine_toexport[~scanmedicine_toexport['MainID'].isin(scanmedicine_filter_final)]
+                scanmedicine_toexport_final = scanmedicine_toexport[~scanmedicine_toexport['MainID'].str.strip().isin(scanmedicine_filter_final)]
                 data_summary["Total Records"].append(df_scanmedicine.shape[0])
                 data_summary["Unique Records (in Source)"].append(len(scanmedicine_ids_final))
                 data_summary["Deduplicated Records"].append(len(scanmedicine_toexport_final))
